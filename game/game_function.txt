@@ -1,0 +1,174 @@
+import pygame
+import sys
+
+
+# 检测启动页的键盘操作
+def check_events(ai_settings):
+    for event in pygame.event.get():
+        # 当按关闭或者按ESC键退出游戏
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                pygame.quit()
+                sys.exit()
+
+        # 按1键选择手动模式
+            elif event.key == pygame.K_1:
+                ai_settings.game_stats = 1
+        # 按2键选择自动模式
+            elif event.key == pygame.K_2:
+                ai_settings.game_stats = 2
+
+
+# 绘制启动页
+def show_start_interface(ai_settings, screen):
+    title_Font = pygame.font.SysFont('KaiTi', 80)  # 设置标题字体
+    title_image = title_Font.render("贪吃蛇", True, (255, 255, 255), (0, 0, 0))  #
+    title_rect = title_image.get_rect()
+    title_rect.center = screen.get_rect().center
+
+    presskey_font = pygame.font.SysFont('KaiTi', 15)  # 设置说明文字的字体
+    presskey_image = presskey_font.render('按1进去游戏，按ESC可退出游戏', True, (255, 255, 255), (0, 0, 0))
+    presskey_rect = presskey_image.get_rect()
+    presskey_rect.centerx = title_rect.centerx
+    presskey_rect.top = title_rect.bottom
+
+    while True:
+        screen.fill(ai_settings.bg_color)  # 绘制屏幕
+        screen.blit(title_image, title_rect)  # 绘制标题
+        screen.blit(presskey_image, presskey_rect)  # 绘制说明文字
+        check_events(ai_settings) # 检测键盘
+        if ai_settings.game_stats != 0:  # 说明按了1或2，退出循环
+            break
+        pygame.display.flip()
+
+
+# 绘制结束页，game over位于屏幕中间
+def show_end_interface(ai_settings, screen):
+    title_font = pygame.font.SysFont('KaiTi', 80)
+    game_image = title_font.render('Game', True, (233, 150, 122))
+    over_image = title_font.render('Over', True, (233, 150, 122))
+    game_rect = game_image.get_rect()
+    over_rect = over_image.get_rect()
+    screen_rect = screen.get_rect()
+    game_rect.midtop = (ai_settings.screen_width / 2, screen_rect.top + 70)
+    over_rect.midtop = (ai_settings.screen_width / 2, game_rect.bottom + 50)
+    screen.blit(game_image, game_rect)
+    screen.blit(over_image, over_rect)
+    pygame.display.flip()
+    # 结束页维持一段时间后，返回启动页，通过修改ai_settings中的game_stats实现
+    pygame.time.wait(500)
+    ai_settings.game_stats = 0
+
+
+def draw_grid(ai_settings, screen):
+    # 绘制横向线
+
+    for x in range(0, ai_settings.screen_width, ai_settings.cell_size):
+        pygame.draw.line(screen, (40, 40, 40), (x, 0), (x, ai_settings.screen_height))
+
+    # 绘制竖向线
+    for y in range(0, ai_settings.screen_height, ai_settings.cell_size):
+        pygame.draw.line(screen, (40, 40, 40), (0, y), (ai_settings.screen_width, y))
+
+
+
+def update_screen(ai_settings, screen, snake,food):
+	screen.fill(ai_settings.bg_color)
+	draw_grid(ai_settings, screen)
+	#移动蛇
+	flag = is_eat_food(ai_settings,snake,food)
+	if not flag:
+		del snake.coords[-1]
+	snake.update()
+	if not is_game_over(ai_settings, snake):
+		ai_settings.game_stats = -1
+	else:
+		draw_score(ai_settings,screen)
+		draw_snake(ai_settings, screen, snake)
+		draw_food(ai_settings, screen, food)
+		pygame.display.flip()
+		#暂停一下
+		# ai_settings.my_clock.tick(ai_settings.clock_frq)
+
+
+def draw_snake(ai_settings, screen, snake):
+    # 头部用蓝色
+    x = snake.coords[0]['x'] * ai_settings.cell_size
+    y = snake.coords[0]['y'] * ai_settings.cell_size
+    snake_head_rect = pygame.Rect(x, y, ai_settings.cell_size, ai_settings.cell_size)
+    pygame.draw.rect(screen, (255, 255, 255), snake_head_rect)
+    # 蛇身内部用浅绿，外框用深绿
+    for coord in snake.coords[1: -1]:
+        x = coord['x'] * ai_settings.cell_size
+        y = coord['y'] * ai_settings.cell_size
+        snake_part_rect = pygame.Rect(x, y, ai_settings.cell_size, ai_settings.cell_size)
+        pygame.draw.rect(screen, (204, 206, 111), snake_part_rect)
+        snake_part_inner_rect = pygame.Rect(x + 4, y + 4, ai_settings.cell_size - 8, ai_settings.cell_size - 8)
+        pygame.draw.rect(screen, (19, 22, 29), snake_part_inner_rect)
+    # 蛇尾用浅绿
+    coord = snake.coords[-1]
+    x = coord['x'] * ai_settings.cell_size
+    y = coord['y'] * ai_settings.cell_size
+    snake_tail_rect = pygame.Rect(x, y, ai_settings.cell_size, ai_settings.cell_size)
+    pygame.draw.rect(screen, (0, 0, 250), snake_tail_rect)
+
+def check_play_events(snake):
+	for event in pygame.event.get():
+		if event.type == pygame.QUIT:
+			pygame.quit()
+			sys.exit()
+		elif event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_ESCAPE:
+				pygame.quit()
+				sys.exit()
+			elif event.key == pygame.K_LEFT and not snake.direction == 'right':
+				snake.direction = 'left'
+			elif event.key == pygame.K_RIGHT and not snake.direction == 'left':
+				snake.direction = 'right'
+			elif event.key == pygame.K_UP and not snake.direction == 'down':
+				snake.direction = 'up'
+			elif event.key == pygame.K_DOWN and not snake.direction == 'up':
+				snake.direction = 'down'
+
+
+def is_game_over(ai_settings,snake):
+	#碰到左右墙壁
+	if (snake.coords[snake.head_index]['x'] == -1 or snake.coords[snake.head_index]['x'] == ai_settings.cell_w):
+		return False
+	#碰到上下墙壁
+	if(snake.coords[snake.head_index]['y'] == -1 or snake.coords[snake.head_index]['y'] == ai_settings.cell_h):
+		return False
+	#碰到自己
+	if(snake.coords[snake.head_index] in snake.coords[1:]):
+		return False
+	return True
+
+
+
+#绘制食物
+def draw_food(ai_settings,screen, food):
+	x = food.coord['x'] * ai_settings.cell_size
+	y = food.coord['y'] * ai_settings.cell_size
+	food_rect = pygame.Rect(x, y, ai_settings.cell_size, ai_settings.cell_size)
+	#将食物的位置涂成红色
+	pygame.draw.rect(screen,(182,30,27),food_rect)
+
+#绘制分数
+def draw_score(ai_settings, screen):
+    score_font = pygame.font.SysFont('KaiTi', 30)
+    score_Content = score_font.render('得分：%s' % (ai_settings.score), -1, (255, 255, 255))
+    score_Rect = score_Content.get_rect()
+    score_Rect.topleft = (ai_settings.screen_width-250, 400)
+    screen.blit(score_Content, score_Rect)
+
+
+def is_eat_food(ai_settings,snake, food):
+    #当蛇头在食物处，吃到食物，更新食物位置
+	if snake.coords[snake.head_index] == food.coord:
+		food.update(ai_settings,snake)
+		ai_settings.score += 1
+		return True
+	return False

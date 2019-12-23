@@ -1,0 +1,20 @@
+# 设置游戏的基本设置
+import pygame
+
+
+class Settings():
+    def __init__(self):
+        self.bg_color = (0, 0, 0)  # 背景颜色
+        self.screen_width = 400  # 屏幕宽度
+        self.screen_height = 400  # 屏幕高度
+        self.cell_size = 20  # 每个格子的大小
+        assert self.screen_height % self.cell_size == 0
+        assert self.screen_width % self.cell_size == 0
+        self.cell_w = int(self.screen_width / self.cell_size)  # 一行的格子数
+        self.cell_h = int(self.screen_height / self.cell_size)  # 一列的格子数
+        self.num = self.cell_w * self.cell_h
+
+        self.game_stats = 0  # 游戏状态
+        self.score = 0  # 游戏得分
+
+        self.clock_frq = 5  # 刷新频率

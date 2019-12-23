@@ -1,0 +1,37 @@
+import pygame
+from settings import Settings
+import game_function as gf
+from snake import Snake
+from food import Food
+
+ai_settings = Settings()
+# 设置屏幕
+background = pygame.image.load("imag/fill.jpg")
+# screen = pygame.display.set_mode((ai_settings.screen_width, ai_settings.screen_height))
+screen = pygame.display.set_mode((420, 450))
+# 添加游戏标题
+pygame.display.set_caption('Snake')
+ftpsClock = pygame.time.Clock()
+snake = Snake(ai_settings)  # 创建蛇
+food = Food(ai_settings, snake)  # 创建食物
+
+
+def run_game1():
+    gf.check_play_events(snake)
+    gf.update_screen(ai_settings, screen, snake, food)
+
+
+def run_game():
+    while True:
+        if ai_settings.game_stats == 0:
+            gf.show_start_interface(ai_settings, screen)
+        elif ai_settings.game_stats == -1:
+            gf.show_end_interface(ai_settings, screen)
+            snake.reset(ai_settings)
+        elif ai_settings.game_stats == 1:
+            run_game1()
+
+        ftpsClock.tick(5)
+if __name__ == "__main__":
+    pygame.init()
+    run_game()
